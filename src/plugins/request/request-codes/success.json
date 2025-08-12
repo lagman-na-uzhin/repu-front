@@ -1,0 +1,143 @@
+{
+  "SUCCESS_USER_LOGIN": {
+    "toast": true,
+    "title": "Вы успешно вошли",
+    "icon": "success",
+    "position": "center"
+  },
+
+  "SUCCESS_BOT_ADDED": {
+    "toast": true,
+    "title": "Вы успешно добавили аккаунт бота",
+    "icon": "success",
+    "position": "top-right",
+    "animation": true
+  },
+
+  "SUCCESS_REVIEW_CREATED_SUCCESSFULLY": {
+    "toast": true,
+    "title": "Вы успешно добавили отзыв",
+    "icon": "success",
+    "position": "top-right",
+    "animation": true
+  },
+
+  "SUCCESS_REVIEW_EDIT": {
+    "toast": true,
+    "title": "Вы успешно изменили отзыв",
+    "icon": "success",
+    "position": "top-right",
+    "animation": true
+  },
+
+  "SUCCESS_MANAGER_REVIEW": {
+    "toast": true,
+    "title": "Вы успешно оставили отзыв на менеджера",
+    "icon": "success",
+    "position": "top-right",
+    "animation": true
+  },
+
+  "SUCCESS_MEDIA_CREATE_REVIEW": {
+    "toast": true,
+    "title": "Вы успешно оставили отзыв компанию",
+    "icon": "success",
+    "position": "top-right",
+    "animation": true
+  },
+
+  "SUCCESS_PASSWORD_CHANGED": {
+    "toast": true,
+    "title": "Вы успешно изменили пароль",
+    "icon": "success",
+    "position": "top-right",
+    "animation": true
+  },
+
+  "SUCCESS_CHANGE_AVATAR": {
+    "toast": true,
+    "title": "Вы успешно изменили аватар бота",
+    "icon": "success",
+    "position": "top-right",
+    "animation": true
+  },
+
+  "SUCCESS_ADD_CREDENTIALS": {
+    "toast": true,
+    "title": "Вы успешно сохранили данные личного кабинета",
+    "icon": "success",
+    "position": "top-right",
+    "animation": true
+  },
+
+  "SUCCESS_REVIEW_DELETE": {
+    "toast": true,
+    "title": "Вы успешно удалили отзыв",
+    "icon": "success",
+    "position": "top-right",
+    "animation": true
+  },
+
+  "SUCCESS_SHOP_REVIEW_ACTIVATE": {
+    "toast": true,
+    "title": "Вы успешно активировали сервис отзывника",
+    "icon": "success",
+    "position": "top-right",
+    "animation": true
+  },
+
+  "SUCCESS_ORGANIZATION_GROUP_ADDED": {
+    "toast": true,
+    "title": "Вы успешно добавили группа филиала"
+  },
+
+  "SUCCESS_UPDATE_AUTO_REPLY": {
+    "toast": true,
+    "title": "Успешно автоответчик обновлен",
+    "icon": "success",
+    "position": "top-right",
+    "animation": true
+  },
+
+  "SUCCESS_UPDATE": {
+    "toast": true,
+    "title": "Успешно обновлен",
+    "icon": "success",
+    "position": "top-right",
+    "animation": true
+  },
+
+  "SUCCESS_REFILL_PARTNER_BALANCE": {
+    "toast": true,
+    "title": "Баланс пополнен \uD83E\uDD11",
+    "text": "Отличная работа!",
+    "icon": "success",
+    "position": "top-right",
+    "animation": true
+  },
+
+  "CLARIFICATION_REPLY_SENT": {
+    "toast": true,
+    "title": "Разъяснительное успешно создано"
+  },
+
+  "SUCCESS_REVIEW_SET_COMPLAINT_TEMPLATE": {
+    "toast": true,
+    "title": "Шаблон для жалобы успешно добавлен"
+  },
+
+  "SUCCESS_GPT_ORDER": {
+    "toast": true,
+    "title": "Заказ успешно создан",
+    "icon": "success",
+    "position": "top-right",
+    "animation": true
+  },
+  "SUCCESS_COMPLAINT_MARKED_AS_READ": {
+    "toast": true,
+    "title": "Отмечено как прочитано",
+    "icon": "success",
+    "position": "top-right",
+    "animation": true
+  }
+}

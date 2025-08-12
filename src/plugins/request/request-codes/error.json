@@ -1,0 +1,184 @@
+{
+  "ERR_INCORRECT_LOGIN_OR_PASSWORD": {
+    "title": "Неверный логин или пароль",
+    "text": "Проверьте данные",
+    "icon": "error"
+  },
+
+  "ERR_USER_EMAIL_EXISTS": {
+    "title": "Эл. почта уже занята",
+    "text": "Используйте другой электронный адрес",
+    "icon": "error"
+  },
+
+  "ERR_USER_PHONE_EXISTS": {
+    "title": "Номер телефона занят",
+    "text": "Используйте другой номер телефона",
+    "icon": "error"
+  },
+
+  "ERR_USER_NOT_FOUND_BY_EMAIL": {
+    "title": "Нет пользователя с подобным email",
+    "text": "Проверьте email",
+    "icon": "error"
+  },
+
+  "ERR_IMAGE_SIZE_IS_NOT_APPROPRIATE": {
+    "title": "Неправильный размер картинки",
+    "text": "Минимальное расширение картинки 600x600, максимальное 7000х7000",
+    "icon": "error"
+  },
+
+  "ERR_AGENT_NOT_ACCEPTED": {
+    "title": "Ваша заявка на рассмотрении",
+    "text": "Скоро с вами свяжутся",
+    "icon": "warning"
+  },
+
+  "ERR_AGENT_REJECTED": {
+    "title": "Ваша заявка отклонена",
+    "text": "Пожалуйста, свяжитесь со службой поддержки для получения дополнительной помощи",
+    "icon": "error"
+  },
+
+  "INVALID_BODY_DATA": {
+    "title": "Неверный логин или пароль от личного кабинета 2gis",
+    "text": "Попробуйте еще раз",
+    "icon": "error"
+  },
+
+  "ERR_ORGANIZATION_REVIEW_EDIT_LIMIT": {
+    "title": "Сейчас нельзя редактировать",
+    "text": "Разрешено менять 3 отзыва в час для одной организации",
+    "icon": "error"
+  },
+
+  "ERR_REVIEW_EDIT_LIMIT": {
+    "title": "Сейчас нельзя редактировать",
+    "text": "Редактировать отзыв можно раз в 6 часов",
+    "icon": "error"
+  },
+
+  "ERR_PASSWORD_MISMATCH": {
+    "title": "Пароли не совпадают",
+    "text": "Проверьте данные",
+    "icon": "error"
+  },
+
+  "ERR_INCORRECT_PASSWORD": {
+    "title": "Неверный пароль",
+    "text": "Проверьте данные",
+    "icon": "error"
+  },
+
+  "ERR_ORGANIZATION_CREDENTIALS_LIMIT_EXCEEDED": {
+    "title": "Вы совершили слишком много попыток",
+    "text": "Пожалуйста, попробуйте снова позже",
+    "icon": "error"
+  },
+
+  "ERR_ORGANIZATION_REVIEW_DELETE_LIMIT": {
+    "title": "Сейчас нельзя удалять",
+    "text": "Удалять отзыв можно раз в 6 часов",
+    "icon": "error"
+  },
+
+  "ERR_TOKEN_OR_MERCHANT_ID_IS_NOT_VALID": {
+    "title": "API Token или ID магазина не правильный",
+    "text": "Пожалуйста, проверьте на корректность данные",
+    "icon": "error"
+  },
+
+  "NOT_ENOUGH_BALANCE": {
+    "title": "Пополните баланс перед покупкой!",
+    "text": "Для дальнейших деталей - обратитесь к менеджеру",
+    "icon": "warning"
+  },
+
+  "ERR_SHOP_EXISTS": {
+    "title": "Магазин уже был добавлен",
+    "text": "Если добавили его не Вы, свяжитесь с менеджером",
+    "icon": "error"
+  },
+
+  "MAX_IMAGES_COUNT_EXCEED": {
+    "title": "Превышен лимит изображений",
+    "text": "Вы достигли максимального количества разрешённых изображений. Пожалуйста, удалите некоторые изображения перед добавлением новых.",
+    "icon": "error"
+  },
+
+  "PERSONAL_CABINET_NOT_BELONGS_TO_ORGANIZATION": {
+    "title": "Личный кабинет не принадлежит организации",
+    "text": "Пожалуйста, проверьте введённые данные и попробуйте снова. Если ошибка повторяется, обратитесь в службу поддержки для получения помощи.",
+    "icon": "error"
+  },
+
+  "ERR_CREDENTIALS_NOT_PROVIDED": {
+    "title": "Учетные данные не предоставлены",
+    "text": "Пожалуйста, убедитесь, что вы ввели правильные данные для авторизации и попробуйте снова.",
+    "icon": "error"
+  },
+
+  "ERR_SOME_ORGANIZATION_NOT_FOUND": {
+    "title": "Некоторые организации не найдены",
+    "text": "Пожалуйста, убедитесь, что вы ввели правильные данные и попробуйте снова. Если ошибка повторяется, обратитесь в службу поддержки для получения помощи.",
+    "icon": "error"
+  },
+
+  "ERR_SOME_FILES_WAS_NOT_UPLOADED": {
+    "title": "Некоторые файлы не удалось загрузить",
+    "text": "Пожалуйста, проверьте размер и формат файлов, а затем попробуйте снова. Если проблема сохраняется, обратитесь в службу поддержки.",
+    "icon": "warning"
+  },
+
+  "ERR_TEMPLATE_NOT_VALID": {
+    "title": "Шаблон не корректный",
+    "text": "Пожалуйста, используйте заполнители правильно. Если проблема сохраняется, обратитесь в службу поддержки."
+  },
+
+  "ERR_PROFILE_WITH_SUCH_EMAIL_IS_ALREADY_TAKEN": {
+    "title": "Профиль с таким почтой уже существует",
+    "icon": "error"
+  },
+
+  "ERR_PROFILE_NOT_FOUND": {
+    "title": "Профиль с таким почтой не существует",
+    "icon": "error"
+  },
+
+  "ERR_NOT_FOUND_BOT": {
+    "title": "Нет ботов",
+    "icon": "error"
+  },
+
+  "ERR_INVALID_TOTAL_WORD_COUNT_PERCENT": {
+    "title": "Некорректное процентное распределение слов",
+    "text": "Суммарный процент должен быть ровно 100%.",
+    "icon": "error"
+  },
+  "ERR_INVALID_MIN_MAX_WORD_COUNT": {
+    "title": "Некорректные значения минимального и максимального количества слов",
+    "text": "Количество слов должно быть от 1 до 50,000.",
+    "icon": "error"
+  },
+  "ERR_CHOOSE_WORD_COUNT_DISTRIBUTION": {
+    "title": "Укажите хотя бы один тип распределения слов в отзывах",
+    "icon": "error"
+  },
+  "ERR_COMPLAINT_NOT_FOUND": {
+    "title": "Жалоба не найдена",
+    "icon": "error"
+  },
+  "ERR_COMPLAINT_TEMPLATE_NOT_FOUND": {
+    "title": "Шаблон жалобы не найдено",
+    "icon": "error"
+  },
+  "ERR_CLARIFICATION_ALREADY_EXIST": {
+    "title": "Ответ от организации уже существует",
+    "icon": "error"
+  },
+  "ERR_COMPLAINT_ALREADY_EXIST": {
+    "title": "Жалоба уже существует",
+    "icon": "error"
+  }
+}
