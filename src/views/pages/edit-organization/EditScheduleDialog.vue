@@ -1,200 +1,323 @@
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue';
+import { computed, ref, watch } from 'vue'
+import { VTooltip } from 'vuetify/components/VTooltip'
 
 interface Schedule {
-  dayOfWeek: string;
-  startTime: string;
-  endTime: string;
-  breakStartTime: string | null;
-  breakEndTime: string | null;
+  uniqueRelation: string
+  dayOfWeek: string
+  startTime: string
+  endTime: string
+  breakStartTime: string | null
+  breakEndTime: string | null
+}
+
+interface ScheduleBlock {
+  id: string
+  days: string[]
+  startTime: string
+  endTime: string
+  isBreak: boolean
+  breakStartTime: string | null
+  breakEndTime: string | null
 }
 
 const props = defineProps({
   modelValue: Boolean,
   workingSchedules: Array<Schedule>,
-});
-const emit = defineEmits(['update:modelValue', 'save']);
+  scheduleId: String,
+})
 
-const showDialog = ref(props.modelValue);
-const allDays = [
-  { dayOfWeek: 'MONDAY', dayName: 'Пн' },
-  { dayOfWeek: 'TUESDAY', dayName: 'Вт' },
-  { dayOfWeek: 'WEDNESDAY', dayName: 'Ср' },
-  { dayOfWeek: 'THURSDAY', dayName: 'Чт' },
-  { dayOfWeek: 'FRIDAY', dayName: 'Пт' },
-  { dayOfWeek: 'SATURDAY', dayName: 'Сб' },
-  { dayOfWeek: 'SUNDAY', dayName: 'Вс' },
-];
+const emit = defineEmits(['update:modelValue', 'save'])
 
-const scheduleState = ref(allDays.map(day => {
-  const existing = props.workingSchedules.find(s => s.dayOfWeek === day.dayOfWeek);
-  return {
-    ...day,
-    isWorking: !!existing,
-    is24x7: false,
-    startTime: existing?.startTime || '09:00',
-    endTime: existing?.endTime || '18:00',
-    isBreak: !!existing?.breakStartTime,
-    breakStartTime: existing?.breakStartTime || '13:00',
-    breakEndTime: existing?.breakEndTime || '14:00',
-  };
-}));
+const showDialog = ref(props.modelValue)
+
+const dayMap = {
+  MONDAY: 'Пн',
+  TUESDAY: 'Вт',
+  WEDNESDAY: 'Ср',
+  THURSDAY: 'Чт',
+  FRIDAY: 'Пт',
+  SATURDAY: 'Сб',
+  SUNDAY: 'Вс',
+}
+
+const dayOrder = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY']
+
+const schedules = ref<ScheduleBlock[]>([])
+const allDays = Object.keys(dayMap)
+
+const availableDays = computed(() => {
+  const selectedDays = schedules.value.flatMap(block => block.days)
+
+  return allDays.filter(day => !selectedDays.includes(day))
+})
+
+const initializeSchedules = () => {
+  if (!props.workingSchedules || props.workingSchedules.length === 0) {
+    schedules.value = [{
+      id: crypto.randomUUID(),
+      days: [],
+      startTime: '09:00',
+      endTime: '18:00',
+      isBreak: false,
+      breakStartTime: '13:00',
+      breakEndTime: '14:00',
+    }]
+
+    return
+  }
+
+  const sortedSchedules = [...props.workingSchedules].sort((a, b) => {
+    const dayA = dayOrder.indexOf(a.dayOfWeek)
+    const dayB = dayOrder.indexOf(b.dayOfWeek)
+
+    return dayA - dayB
+  })
+
+  const newSchedules: ScheduleBlock[] = []
+  let currentBlock: ScheduleBlock | null = null
+
+  for (const schedule of sortedSchedules) {
+    // Check if the current schedule can be added to the current block
+    const isSameTime = currentBlock?.startTime === schedule.startTime && currentBlock?.endTime === schedule.endTime
+    const isSameBreak = currentBlock?.isBreak === !!schedule.breakStartTime && (currentBlock?.isBreak ? (currentBlock?.breakStartTime === schedule.breakStartTime && currentBlock?.breakEndTime === schedule.breakEndTime) : true)
+
+    if (currentBlock && isSameTime && isSameBreak) {
+      currentBlock.days.push(schedule.dayOfWeek)
+    } else {
+      // Start a new block
+      currentBlock = {
+        id: crypto.randomUUID(),
+        days: [schedule.dayOfWeek],
+        startTime: schedule.startTime,
+        endTime: schedule.endTime,
+        isBreak: !!schedule.breakStartTime,
+        breakStartTime: schedule.breakStartTime,
+        breakEndTime: schedule.breakEndTime,
+      }
+      newSchedules.push(currentBlock)
+    }
+  }
+  schedules.value = newSchedules
+}
 
 const handleSave = () => {
-  const newSchedules = scheduleState.value
-    .filter(day => day.isWorking)
-    .map(day => {
-      // Логика для круглосуточного режима
-      if (day.is24x7) {
-        return {
-          dayOfWeek: day.dayOfWeek,
-          startTime: '00:00',
-          endTime: '24:00',
-          breakStartTime: null,
-          breakEndTime: null,
-        };
-      }
-      return {
-        dayOfWeek: day.dayOfWeek,
-        startTime: day.startTime,
-        endTime: day.endTime,
-        breakStartTime: day.isBreak ? day.breakStartTime : null,
-        breakEndTime: day.isBreak ? day.breakEndTime : null,
-      };
-    });
-  emit('save', newSchedules);
-  showDialog.value = false;
-};
+  const newSchedules: Schedule[] = []
+
+  schedules.value.forEach(block => {
+    block.days.forEach(day => {
+      newSchedules.push({
+        uniqueRelation: `${day}_${props.scheduleId}`,
+        dayOfWeek: day,
+        startTime: block.startTime,
+        endTime: block.endTime,
+        breakStartTime: block.isBreak ? block.breakStartTime : null,
+        breakEndTime: block.isBreak ? block.breakEndTime : null,
+      })
+    })
+  })
+
+  emit('save', newSchedules)
+}
 
 const handleClose = () => {
-  showDialog.value = false;
-};
+  showDialog.value = false
+}
 
-const set24x7 = () => {
-  scheduleState.value.forEach(day => {
-    day.isWorking = true;
-    day.is24x7 = true;
-  });
-};
+const addNewScheduleBlock = () => {
+  schedules.value.push({
+    id: crypto.randomUUID(),
+    days: availableDays.value,
+    startTime: '09:00',
+    endTime: '18:00',
+    isBreak: false,
+    breakStartTime: '13:00',
+    breakEndTime: '14:00',
+  })
+}
 
-const setWeekend = (dayOfWeek) => {
-  const day = scheduleState.value.find(d => d.dayOfWeek === dayOfWeek);
-  if (day) {
-    day.isWorking = !day.isWorking;
-    day.is24x7 = false;
+const removeScheduleBlock = (id: string) => {
+  schedules.value = schedules.value.filter(block => block.id !== id)
+  if (schedules.value.length === 0) {
+    addNewScheduleBlock()
+    schedules.value[0].days = []
   }
-};
+}
 
-const setAllWorking = () => {
-  scheduleState.value.forEach(day => {
-    day.isWorking = true;
-    day.is24x7 = false;
-  });
-};
+const dayActiveMap = computed(() => {
+  const map = new Map<string, string>() // Key: dayOfWeek, Value: blockId
 
-watch(() => props.modelValue, (newVal) => {
-  showDialog.value = newVal;
-});
+  schedules.value.forEach(block => {
+    block.days.forEach(day => {
+      map.set(day, block.id)
+    })
+  })
 
-watch(showDialog, (newVal) => {
-  if (!newVal) {
-    emit('update:modelValue', false);
+  return map
+})
+
+const toggleDaySelection = (block: ScheduleBlock, day: string) => {
+  const dayIndex = block.days.indexOf(day)
+
+  if (dayIndex !== -1) {
+    block.days = block.days.filter(d => d !== day)
   }
-});
+  else {
+    for (const otherBlock of schedules.value) {
+      if (otherBlock.id !== block.id)
+        otherBlock.days = otherBlock.days.filter(d => d !== day)
+    }
+    block.days = [...block.days, day]
+  }
+}
+
+watch(() => props.modelValue, newVal => {
+  showDialog.value = newVal
+  if (newVal)
+    initializeSchedules()
+})
+
+watch(() => props.workingSchedules, () => {
+  initializeSchedules()
+}, { deep: true, immediate: true })
+
+watch(showDialog, newVal => {
+  if (!newVal)
+    emit('update:modelValue', false)
+})
 </script>
 
 <template>
-  <VDialog v-model="showDialog" max-width="600">
+  <VDialog
+    v-model="showDialog"
+    max-width="600"
+    @close="handleClose"
+  >
     <VCard>
-      <VCardTitle>
-        <span class="text-h6">Редактирование расписания</span>
-      </VCardTitle>
       <VCardText>
-        <div class="d-flex justify-center gap-2 mb-4">
-          <VBtn color="primary" @click="set24x7">Круглосуточно</VBtn>
-          <VBtn color="secondary" @click="setWeekend('SATURDAY')">Сб — выходной</VBtn>
-          <VBtn color="secondary" @click="setWeekend('SUNDAY')">Вс — выходной</VBtn>
-          <VBtn color="secondary" @click="setAllWorking">Все дни рабочие</VBtn>
-        </div>
-
         <VList density="compact">
           <VListItem
-            v-for="day in scheduleState"
-            :key="day.dayOfWeek"
-            class="mb-2 rounded"
-            :class="{ 'bg-grey-lighten-4': !day.isWorking }"
+            v-for="block in schedules"
+            :key="block.id"
+            class="mb-4 rounded position-relative"
+            :class="{ 'bg-grey-lighten-4': block.days.length === 0 }"
           >
-            <div class="d-flex align-center">
-              <VCheckbox
-                v-model="day.isWorking"
-                :label="day.dayName"
-                hide-details
-                class="flex-grow-1"
-                @change="day.is24x7 = false"
-              />
-              <div v-if="day.isWorking" class="d-flex align-center gap-2">
-                <VCheckbox
-                  v-model="day.is24x7"
-                  label="24/7"
-                  hide-details
-                  class="mr-4"
-                  @change="day.is24x7 ? day.isBreak = false : null"
-                />
+            <VBtn
+              icon
+              variant="text"
+              size="small"
+              class="position-absolute top-0 right-0 mt-1 mr-1"
+              @click.stop="removeScheduleBlock(block.id)"
+            >
+              <VIcon icon="bx-x" />
+              <VTooltip
+                activator="parent"
+                location="top"
+              >
+                Удалить блок
+              </VTooltip>
+            </VBtn>
 
+            <div class="d-flex flex-column justify-center align-center pt-2">
+              <VCol
+                cols="12"
+                class="d-flex align-center justify-center gap-2"
+              >
+                <VBtn
+                  v-for="day in allDays"
+                  :key="day"
+                  size="60"
+                  variant="tonal"
+                  :color="dayActiveMap.get(day) === block.id ? 'primary' : 'default'"
+                  class="mr-1 mb-1"
+                  @click="toggleDaySelection(block, day)"
+                >
+                  {{ dayMap[day] }}
+                </VBtn>
+              </VCol>
+
+              <VCol
+                cols="12"
+                md="6"
+                class="d-flex align-center gap-2"
+              >
                 <VTextField
-                  v-if="!day.is24x7"
-                  v-model="day.startTime"
+                  v-model="block.startTime"
                   type="time"
-                  density="compact"
                   hide-details
+                  variant="filled"
                   class="time-input"
                 />
-                <span v-if="!day.is24x7">—</span>
+                <span class="text-h6">—</span>
                 <VTextField
-                  v-if="!day.is24x7"
-                  v-model="day.endTime"
+                  v-model="block.endTime"
                   type="time"
-                  density="compact"
                   hide-details
+                  variant="filled"
                   class="time-input"
                 />
-
+              </VCol>
+              <div class="d-flex align-center mt-2 ml-10">
                 <VCheckbox
-                  v-if="!day.is24x7"
-                  v-model="day.isBreak"
+                  v-model="block.isBreak"
                   label="Перерыв"
-                  density="compact"
                   hide-details
-                  class="ml-4"
+                  class="flex-grow-1"
                 />
+                <div
+                  v-if="block.isBreak"
+                  class="d-flex align-center gap-2"
+                >
+                  <VTextField
+                    v-model="block.breakStartTime"
+                    type="time"
+                    density="compact"
+                    hide-details
+                    variant="outlined"
+                    class="time-input"
+                  />
+                  <span class="text-h6">—</span>
+                  <VTextField
+                    v-model="block.breakEndTime"
+                    type="time"
+                    density="compact"
+                    hide-details
+                    variant="outlined"
+                    class="time-input"
+                  />
+                </div>
               </div>
-            </div>
-            <div v-if="day.isWorking && day.isBreak && !day.is24x7" class="d-flex align-center gap-2 mt-2 ml-10">
-              <VTextField
-                v-model="day.breakStartTime"
-                type="time"
-                label="Начало перерыва"
-                density="compact"
-                hide-details
-                class="time-input"
-              />
-              <span>—</span>
-              <VTextField
-                v-model="day.breakEndTime"
-                type="time"
-                label="Конец перерыва"
-                density="compact"
-                hide-details
-                class="time-input"
-              />
             </div>
           </VListItem>
         </VList>
+        <VBtn
+          v-if="availableDays.length > 0"
+          color="primary"
+          variant="tonal"
+          @click="addNewScheduleBlock"
+        >
+          <VIcon
+            start
+            icon="bx-plus"
+          /> Добавить другие дни ({{ availableDays.map(day => dayMap[day]).join(', ') }})
+        </VBtn>
       </VCardText>
+
       <VCardActions>
         <VSpacer />
-        <VBtn variant="text" @click="handleClose">Отмена</VBtn>
-        <VBtn color="primary" variant="flat" @click="handleSave">Сохранить</VBtn>
+        <VBtn
+          variant="text"
+          @click="handleClose"
+        >
+          Отмена
+        </VBtn>
+        <VBtn
+          color="primary"
+          variant="flat"
+          @click="handleSave"
+        >
+          Сохранить
+        </VBtn>
       </VCardActions>
     </VCard>
   </VDialog>
@@ -202,6 +325,9 @@ watch(showDialog, (newVal) => {
 
 <style scoped>
 .time-input {
-  max-width: 100px;
+  width: 90px;
+}
+.gap-2 {
+  gap: 8px;
 }
 </style>

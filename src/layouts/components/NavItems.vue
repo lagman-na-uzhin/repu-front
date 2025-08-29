@@ -21,10 +21,10 @@ const isAdmin = true
 
 const regularNavGroups = [
   { title: 'Главная', to: '/dashboard', icon: 'bx-home-circle' },
-  { title: 'О Компании', to: '/company', icon: 'bx-buildings' },
+  // { title: 'О Компании', to: '/company', icon: 'bx-buildings' },
   { title: 'Мои Организаций', to: '/organizations', icon: 'bx-store' },
   { title: 'Отзывы', to: '/reviews', icon: 'bx-comment-detail' },
-  { title: 'Шаблоны ответов', to: '/templates/reply', icon: 'bx-message-dots' },
+  // { title: 'Шаблоны ответов', to: '/templates/reply', icon: 'bx-message-dots' },
   { title: 'Cотрудники', to: '/employees', icon: 'bx-group' },
 ]
 
@@ -54,7 +54,7 @@ const adminNavGroups = [
       v-else
     >
       <VerticalNavLink
-        class="pa-3 text-subtitle-1 cursor-pointer"
+        class="pa-4 text-subtitle-1 cursor-pointer"
         :item="{ title: group.title, to: group.to, icon: group.icon }"
       />
     </template>

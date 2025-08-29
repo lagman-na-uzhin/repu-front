@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ROUTES } from "@/plugins/router/routes"
+import { ROUTES } from '@/plugins/router/routes'
+import { DEFAULT_PERMISSIONS_MODULES } from '@core/model/default/policy'
 
 const router = useRouter()
 
@@ -13,8 +14,13 @@ const handleOpenCreateEmployeeForm = () => {
     <div class="text-h5 font-weight-bold">
       Сотрудники
     </div>
-    <VBtn @click="handleOpenCreateEmployeeForm" size="small" variant="outlined">Добавить сотрудника</VBtn>
+    <PermissionButton
+      :permission="DEFAULT_PERMISSIONS_MODULES.EMPLOYEE.CAN_CREATE_EMPLOYEE"
+      size="small"
+      variant="outlined"
+      @click="handleOpenCreateEmployeeForm"
+    >
+      Добавить сотрудника
+    </PermissionButton>
   </div>
 </template>
-<script setup lang="ts">
-</script>

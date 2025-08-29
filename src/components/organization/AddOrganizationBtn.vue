@@ -1,10 +1,12 @@
 <script setup lang="ts">
+import { DEFAULT_PERMISSIONS_MODULES } from "@core/model/default/policy"
 import { ref } from 'vue'
 import AddOrganizationDialog from '@/views/add-organization/AddOrganizationDialog.vue'
 
 
 const props = defineProps<{
   variant: "flat" | "text" | "elevated" | "tonal" | "outlined" | "plain"
+  size: 'small' | 'medium' | 'large'
 }>()
 
 const showAddModal = ref(false)
@@ -15,11 +17,13 @@ const handleAdd = () => {
 </script>
 
 <template>
-  <VBtn
+  <PermissionButton
+    :permission="DEFAULT_PERMISSIONS_MODULES.COMPANY.CAN_ADD_ORGANIZATION"
     color="primary"
     class="mt-2 mt-md-0"
     @click="showAddModal = true"
     :variant="variant"
+    :size="size"
   >
     <VIcon
       start
@@ -27,7 +31,7 @@ const handleAdd = () => {
       color="secondary"
     />
     Добавить организацию
-  </VBtn>
+  </PermissionButton>
 
   <AddOrganizationDialog
     v-model:modelValue="showAddModal"

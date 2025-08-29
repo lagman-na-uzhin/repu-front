@@ -2,14 +2,22 @@
 import { computed, ref } from 'vue'
 import { formatPhoneWithoutPrefix } from "@core/utils/formatters"
 
-const props = defineProps({
-  data: {
-    type: Object,
-    required: true,
-  },
-})
+// 🆕 Определяем интерфейс для данных
+interface IStep1Data {
+  name: string
+  email: string
+  phone: string
+}
 
-const emit = defineEmits(['update:data'])
+// 🆕 Используем интерфейс в props
+const props = defineProps<{
+  data: IStep1Data
+}>()
+
+// 🆕 Используем интерфейс в emits
+const emit = defineEmits<{
+  (e: 'update:data', payload: IStep1Data): void
+}>()
 
 const form = ref<any>(null)
 
@@ -25,7 +33,6 @@ const formattedPhone = computed({
   },
 })
 
-// expose `form` to the parent component for validation
 defineExpose({
   validate: () => form.value.validate(),
 })

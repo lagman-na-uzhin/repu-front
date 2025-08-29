@@ -345,6 +345,7 @@ declare module 'vue' {
     OrganizationSelect: typeof import('./src/components/navbar/OrganizationSelect.vue')['default']
     OrganizationTwogisMap: typeof import('./src/components/organization/OrganizationTwogisMap.vue')['default']
     PaginationControl: typeof import('./src/@core/components/PaginationControl.vue')['default']
+    PermissionButton: typeof import('./src/@core/components/PermissionButton.vue')['default']
     PlacementSearchForm: typeof import('./src/components/forms/PlacementSearchForm.vue')['default']
     PricingPlanDialog: typeof import('./src/components/dialogs/PricingPlanDialog.vue')['default']
     ProPlanCard: typeof import('./src/components/tariff-cards/ProPlanCard.vue')['default']

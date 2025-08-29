@@ -1,24 +1,21 @@
 <script setup lang="ts">
 import { nextTick, watch } from 'vue'
 
-const props = defineProps({
-  roles: {
-    type: Array,
-    required: true,
-  },
-  role: {
-    type: [String, Number],
-    default: null,
-  },
-})
+const props = defineProps<{
+  roles: { title: string; value: string; props?: object }[]
+  roleId: string | null
+}>()
 
-const emit = defineEmits(['update:role', 'show-new-role-dialog'])
+const emit = defineEmits<{
+  (e: 'update:roleId', payload: string | null): void
+  (e: 'show-new-role-dialog'): void
+}>()
 
-watch(() => props.role, newVal => {
+watch(() => props.roleId, newVal => {
   if (newVal === 'new-role') {
     emit('show-new-role-dialog')
     nextTick(() => {
-      emit('update:role', null)
+      emit('update:roleId', null)
     })
   }
 })
@@ -26,12 +23,12 @@ watch(() => props.role, newVal => {
 
 <template>
   <VSelect
-    :model-value="props.role"
+    :model-value="props.roleId"
     :rules="[(v: string) => !!v || 'Выберите роль']"
     :items="props.roles"
     label="Выберите роль"
     variant="outlined"
     class="mb-4"
-    @update:modelValue="value => emit('update:role', value)"
+    @update:modelValue="value => emit('update:roleId', value)"
   />
 </template>

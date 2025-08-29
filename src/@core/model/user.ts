@@ -1,10 +1,14 @@
+import { PERMISSION_MODULES } from "@/shared/contracts/role/permissions"
+
+
 export interface IUserRole {
   id: string
   name: string | null
   type: 'OWNER' | 'EMPLOYEE' | 'MANAGER' | 'ADMIN'
   permissions: {
-    companies: string[],
-    reviews: Map<string, string[]>
+    id: string
+    module: PERMISSION_MODULES
+    permission: string
   }
 }
 

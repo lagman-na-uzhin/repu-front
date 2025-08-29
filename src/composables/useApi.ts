@@ -129,4 +129,35 @@ export const useApi = {
           })
         })
     }),
+  put: async <T = any>(
+    api: string,
+    payload?: any,
+    isFormData = false,
+  ): Promise<RequestResult<T>> =>
+    new Promise(resolve => {
+      axiosIns
+        .put(api, payload, {
+          headers: {
+            'Content-Type': isFormData
+              ? 'multipart/form-data'
+              : 'application/json',
+          },
+        })
+        .then((response: any) => {
+          console.log(response, "response")
+          requestHandleMessage('OK', response?.data?.message)
+          resolve({
+            success: true,
+            data: response.data?.data,
+          })
+        })
+        .catch((error: any) => {
+          console.log(error, "ERRRORR")
+          requestHandleMessage('ERROR', error?.response?.data?.statusCode)
+          resolve({
+            success: false,
+            data: null,
+          })
+        })
+    }),
 }

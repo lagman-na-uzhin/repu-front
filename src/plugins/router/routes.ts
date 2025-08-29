@@ -3,7 +3,8 @@ export const ROUTES = {
   COMPANY: 'company',
   SUBSCRIPTIONS: 'subscriptions',
   ORGANIZATION_LIST: 'organizations',
-  ORGANIZATION_EDIT: 'organizations/edit',
+  ORGANIZATION_EDIT: (id) => `organizations/${id}/edit`,
+  ORGANIZATION_ANALYTICS: (id) => `organizations/${id}/analytics`,
   REVIEW_LIST: 'reviews',
   ADD_ORGANIZATION: 'organizations/add',
   REPLY_TEMPLATE_LIST: 'templates/reply',
@@ -38,7 +39,13 @@ export const routes = [
         path: ROUTES.EMPLOYEE_CREATE,
         component: () => import('@/pages/employee/EmployeeCreatePage.vue'),
 
-        meta: { requiresAuth: true },
+        meta: {
+          requiresAuth: true,
+          requiredPermissions: {
+            module: 'EMPLOYEE',
+            permission: 'create_employee',
+          },
+        },
       },
       {
         path: ROUTES.REPLY_TEMPLATE_LIST,
@@ -53,8 +60,14 @@ export const routes = [
         meta: { requiresAuth: true },
       },
       {
-        path: ROUTES.ORGANIZATION_EDIT,
+        path: ROUTES.ORGANIZATION_EDIT(':id'),
         component: () => import('@/pages/organization/OrganizationEditPage.vue'),
+
+        meta: { requiresAuth: true },
+      },
+      {
+        path: ROUTES.ORGANIZATION_ANALYTICS(':id'),
+        component: () => import('@/pages/organization/OrganizationAnalytics.vue'),
 
         meta: { requiresAuth: true },
       },

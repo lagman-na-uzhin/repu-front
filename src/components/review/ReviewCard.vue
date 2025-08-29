@@ -9,8 +9,8 @@ const props = defineProps({
     validator: value => {
       return (
         typeof value.id === 'number'
-        && typeof value.author === 'object'
-        && typeof value.author.name === 'string'
+        && typeof value.profile === 'object'
+        && typeof value.profile.firstname === 'string'
         && typeof value.text === 'string'
         && typeof value.rating === 'number'
         && typeof value.date === 'string'
@@ -43,7 +43,7 @@ const props = defineProps({
       </VCol>
       <VCol>
         <div class="text-subtitle-1 font-weight-medium">
-          {{ review.profile.firstName }}
+          {{ review.profile.firstname }}
         </div>
         <div class="text-caption text-grey">
           {{ review.date }}

@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, defineEmits, defineProps, ref, watch } from 'vue'
-
 import { getCityName } from '@/utils/city-alias-map'
 
 const props = defineProps({
@@ -12,9 +11,10 @@ const props = defineProps({
 
 const emit = defineEmits(['update:filters'])
 
-const selectedGroup = ref(null)
-const selectedCity = ref(null)
-const selectedOrganization = ref(null)
+// 💡 Переменные для v-model теперь инициализируются массивами
+const groupIds = ref([])
+const cities = ref([])
+const organizationIds = ref([])
 
 const filteredGroups = computed(() => {
   if (!props.compactOrganizations || props.compactOrganizations.length === 0)
@@ -27,9 +27,7 @@ const filteredGroups = computed(() => {
   )
 
   const filtered = Array.from(uniqueGroupIds).map(id => ({ id, name: id }))
-
-  filtered.push({ id: null, name: 'Все' })
-
+  filtered.unshift({ id: null, name: 'Все' })
   return filtered
 })
 
@@ -38,54 +36,38 @@ const filteredOrganizations = computed(() => {
     return []
 
   let organizationsToFilter = props.compactOrganizations
-  if (selectedGroup.value)
-    organizationsToFilter = organizationsToFilter.filter(org => org.groupId === selectedGroup.value)
+  if (groupIds.value && groupIds.value.length > 0)
+    organizationsToFilter = organizationsToFilter.filter(org => groupIds.value.includes(org.groupId))
 
-  if (selectedCity.value)
-    organizationsToFilter = organizationsToFilter.filter(org => org.address.city === selectedCity.value)
+  if (cities.value && cities.value.length > 0)
+    organizationsToFilter = organizationsToFilter.filter(org => cities.value.includes(org.address.city))
 
-  if (!organizationsToFilter.find(i => i.id === null)) {
-    organizationsToFilter.push({ id: null, name: 'Все' })
-  }
-
-  console.log(organizationsToFilter, "organizationsToFilter")
-  return organizationsToFilter
+  const finalOrganizations = organizationsToFilter.map(org => ({ id: org.id, name: org.name }))
+  finalOrganizations.unshift({ id: null, name: 'Все' })
+  return finalOrganizations
 })
 
 const filteredCities = computed(() => {
   if (!props.compactOrganizations || !Array.isArray(props.compactOrganizations) || props.compactOrganizations.length === 0)
     return []
 
-  const citiesSet = new Set(
-    props.compactOrganizations
-      .filter(org => org.address)
-      .map(org => org.address.city)
-  );
+  let organizationsToFilter = props.compactOrganizations
+  if (groupIds.value && groupIds.value.length > 0)
+    organizationsToFilter = organizationsToFilter.filter(org => groupIds.value.includes(org.groupId))
 
-  const citiesMap = new Map()
-
-  citiesSet.forEach(alias => {
-    if (alias) {
-      citiesMap.set(alias, {
-        value: alias,
-        name: getCityName(alias),
-      })
-    }
-  })
-
-  const citiesArray = Array.from(citiesMap.values())
-
+  const citiesSet = new Set(organizationsToFilter.map(org => org.address.city).filter(c => !!c))
+  const citiesArray = Array.from(citiesSet).map(c => ({ value: c, name: getCityName(c) }))
   citiesArray.unshift({ value: null, name: 'Все' })
-
-  console.log(citiesArray, "citiesArray")
   return citiesArray
 })
 
-watch([selectedGroup, selectedCity, selectedOrganization], () => {
+// 💡 Важно: в watch теперь сравниваем массивы
+watch([groupIds, cities, organizationIds], () => {
+  // Мы можем передать пустые массивы в API, чтобы сбросить фильтры
   emit('update:filters', {
-    selectedGroup: selectedGroup.value,
-    selectedCity: selectedCity.value,
-    selectedOrganization: selectedOrganization.value,
+    groupIds: groupIds.value,
+    cities: cities.value,
+    organizationIds: organizationIds.value,
   })
 }, { deep: true })
 </script>
@@ -116,13 +98,15 @@ watch([selectedGroup, selectedCity, selectedOrganization], () => {
           class="pa-1"
         >
           <VSelect
-            v-model="selectedGroup"
+            v-model="groupIds"
             :items="filteredGroups"
+            label="Группа"
             item-value="id"
             item-title="name"
             variant="outlined"
             hide-details
             clearable
+            multiple
             density="comfortable"
           />
         </VCol>
@@ -135,13 +119,15 @@ watch([selectedGroup, selectedCity, selectedOrganization], () => {
           class="pa-1"
         >
           <VSelect
-            v-model="selectedCity"
+            v-model="cities"
             :items="filteredCities"
             variant="outlined"
+            label="Город"
             item-value="value"
             item-title="name"
             hide-details
             clearable
+            multiple
             density="comfortable"
           />
         </VCol>
@@ -154,13 +140,15 @@ watch([selectedGroup, selectedCity, selectedOrganization], () => {
           class="pa-1"
         >
           <VSelect
-            v-model="selectedOrganization"
+            v-model="organizationIds"
             :items="filteredOrganizations"
             item-value="id"
             item-title="name"
+            label="Организация"
             variant="outlined"
             hide-details
             clearable
+            multiple
             density="comfortable"
           />
         </VCol>

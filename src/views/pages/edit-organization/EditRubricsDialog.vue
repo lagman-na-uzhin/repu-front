@@ -1,68 +1,119 @@
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue';
+import { ref, watch } from 'vue'
+import { SOURCE } from '@core/model/shared/source'
+import { API } from '@/shared/api'
 
 const props = defineProps({
   modelValue: Boolean,
-  rubrics: Array<{ name: string; type: 'primary' | 'additional' }>,
-});
-const emit = defineEmits(['update:modelValue', 'save']);
+  rubrics: {
+    type: Array as () => Array<{ name: string; id: string }>,
+    default: () => [],
+  },
+  organizationId: {
+    type: Number,
+    required: true,
+  },
+})
 
-const showDialog = ref(props.modelValue);
-const allAvailableRubrics = ref([
-  'Ресторан', 'Кафе', 'Магазин', 'Автосервис', 'Медицинский центр',
-  'Салон красоты', 'Фитнес-клуб', 'Бар', 'Ночной клуб', 'Кинотеатр',
-]);
-const selectedRubrics = ref(props.rubrics.map(r => r.name));
-const searchQuery = ref('');
+const emit = defineEmits(['update:modelValue', 'save'])
 
-// Вычисляемый список доступных элементов для отображения
-// Мы исключаем уже выбранные, чтобы они не отображались в списке поиска
-const availableItems = computed(() => {
-  return allAvailableRubrics.value.filter(item => !selectedRubrics.value.includes(item));
-});
+const showDialog = ref(props.modelValue)
+
+const foundRubrics = ref<{ id: string; name: string }[]>([])
+const selectedRubrics = ref<{ id: string; name: string }>(props.rubrics)
+const searchQuery = ref('')
+
+// Add a new reactive variable to track the loading state
+const isLoading = ref(false)
 
 const handleSave = () => {
-  const newRubrics = selectedRubrics.value.map(name => ({
-    name,
-    type: 'additional',
-  }));
-  emit('save', newRubrics);
-  showDialog.value = false;
-};
+  const newExternal = selectedRubrics.value.map(rubric => ({
+    externalId: rubric.id,
+    platform: SOURCE.TWOGIS,
+  }))
+
+  emit('save', { rubrics: { external: newExternal } })
+}
 
 const handleClose = () => {
-  showDialog.value = false;
-};
+  showDialog.value = false
+}
 
 const removeRubric = (rubricName: string) => {
-  selectedRubrics.value = selectedRubrics.value.filter(name => name !== rubricName);
-};
+  selectedRubrics.value = selectedRubrics.value.filter(name => name !== rubricName)
+}
 
-// 💡 Новый метод для добавления рубрики
-const addRubric = (rubric: string) => {
-  if (rubric && !selectedRubrics.value.includes(rubric)) {
-    selectedRubrics.value.push(rubric);
-    searchQuery.value = ''; // Очищаем поле поиска
+const addRubric = (rubricId: string) => {
+  const selectedItem = foundRubrics.value.find(item => item.id === rubricId)
+
+  if (selectedItem && !selectedRubrics.value.includes(selectedItem.name)) {
+    selectedRubrics.value.push({ name: selectedItem.name, id: selectedItem.id })
+    console.log(selectedRubrics.value, 'selectedRubrics.value.')
+    searchQuery.value = ''
+    foundRubrics.value = []
   }
-};
+}
 
-watch(() => props.modelValue, (newVal) => {
-  showDialog.value = newVal;
-});
+const fetchRubrics = async (text: string) => {
+  if (!text || text.length < 2) {
+    foundRubrics.value = []
 
-watch(showDialog, (newVal) => {
+    return
+  }
+
+  isLoading.value = true
+
+  try {
+    const { success, data } = await API.TWOGIS.searchRubricsFromTwogis({ organizationId: props.organizationId, text })
+
+    if (success && data && data.items)
+      foundRubrics.value = data.items
+    else
+      foundRubrics.value = []
+  }
+  catch (error) {
+    console.error('Error fetching rubrics:', error)
+    foundRubrics.value = []
+
+    handleClose()
+  }
+  finally {
+    isLoading.value = false
+  }
+}
+
+let timeoutId: number | null = null
+watch(searchQuery, newQuery => {
+  if (timeoutId)
+    clearTimeout(timeoutId)
+
+  timeoutId = setTimeout(() => {
+    fetchRubrics(newQuery)
+  }, 500) // 500ms debounce
+})
+
+watch(() => props.modelValue, newVal => {
+  showDialog.value = newVal
+})
+
+watch(showDialog, newVal => {
   if (!newVal) {
-    emit('update:modelValue', false);
+    emit('update:modelValue', false)
+    searchQuery.value = ''
+    foundRubrics.value = []
   }
-});
+})
 
-watch(() => props.rubrics, (newRubrics) => {
-  selectedRubrics.value = newRubrics.map(r => r.name);
-});
+watch(() => props.rubrics, newRubrics => {
+  selectedRubrics.value = newRubrics.map(r => r.name)
+})
 </script>
 
 <template>
-  <VDialog v-model="showDialog" max-width="600">
+  <VDialog
+    v-model="showDialog"
+    max-width="600"
+  >
     <VCard>
       <VCardText>
         <div class="d-flex flex-wrap gap-2 mb-4">
@@ -72,22 +123,39 @@ watch(() => props.rubrics, (newRubrics) => {
             closable
             @click:close="removeRubric(rubric)"
           >
-            {{ rubric }}
+            {{ rubric.name }}
           </VChip>
         </div>
 
         <VAutocomplete
-          :items="availableItems"
           v-model:search="searchQuery"
+          :items="foundRubrics"
+          item-title="name"
+          item-value="id"
+          :no-data-text="searchQuery.length > 0 ? 'Ничего не найдено' : 'Начните ввод...'"
           label="Поиск и добавление рубрик"
           hide-details
           clearable
-          @update:model-value="addRubric" />
+          :loading="isLoading"
+          :custom-filter="() => true"
+          @update:model-value="addRubric"
+        />
       </VCardText>
       <VCardActions>
         <VSpacer />
-        <VBtn variant="text" @click="handleClose">Отмена</VBtn>
-        <VBtn color="primary" variant="flat" @click="handleSave">Сохранить</VBtn>
+        <VBtn
+          variant="text"
+          @click="handleClose"
+        >
+          Отмена
+        </VBtn>
+        <VBtn
+          color="primary"
+          variant="flat"
+          @click="handleSave"
+        >
+          Сохранить
+        </VBtn>
       </VCardActions>
     </VCard>
   </VDialog>

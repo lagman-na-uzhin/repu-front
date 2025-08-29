@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { IGooglePlacementSearchResponse } from "@/shared/api/google/dto/google-placement-search.response"
 import { computed, onUnmounted, ref, watch } from 'vue'
-import type { AddOrganizationPayload, PlacementPayload } from '@/shared/api/organization/organization-api.dto.in' // Добавил PlacementPayload
+import type { AddOrganizationPayload, PlacementPayload } from '@/shared/api/organization/organization-api.dto.in'
 import { useAuthStore } from '@/stores/auth.store'
 import { getPlatformPngAddress } from '@core/utils/getPlatformIcon'
 import { API } from '@/shared/api'
@@ -50,11 +50,8 @@ const fetchGoogleList = async () => {
     city.value,
   )
 
-  console.log(data, "data")
   if (requestStatus) {
     const { items } = data.result
-
-    console.log(items.map(item => ({ ...item, source: 'GOOGLE' })), "result.items.filter(item => item.name && item.id).map(item => ({ ...item, source: 'GOOGLE' }))")
     if (items.length)
       return items.map(item => ({ ...item, source: 'GOOGLE' }))
   }
@@ -103,23 +100,22 @@ const fetchCombinedList = async () => {
   let googleResults: (IGooglePlacementSearchResponse & { source: 'GOOGLE' })[] = []
 
   try {
-    // Determine which sources to fetch based on selected organizations
+    const fetchPromises = []
     const hasYandexSelected = selectedOrganizations.value.some(org => org.source === 'YANDEX')
     const hasTwogisSelected = selectedOrganizations.value.some(org => org.source === 'TWOGIS')
     const hasGoogleSelected = selectedOrganizations.value.some(org => org.source === 'GOOGLE')
 
-    const fetchPromises = []
-    if (!hasYandexSelected) { // Only fetch Yandex if no Yandex organization is already selected
+    if (!hasYandexSelected) {
       fetchPromises.push(fetchYandexList())
     }
     else {
-      fetchPromises.push(Promise.resolve([])) // Return empty if already selected
+      fetchPromises.push(Promise.resolve([]))
     }
-    if (!hasTwogisSelected) { // Only fetch 2GIS if no 2GIS organization is already selected
+    if (!hasTwogisSelected) {
       fetchPromises.push(fetchTwogisList())
     }
     else {
-      fetchPromises.push(Promise.resolve([])) // Return empty if already selected
+      fetchPromises.push(Promise.resolve([]))
     }
     if (!hasGoogleSelected) {
       fetchPromises.push(fetchGoogleList())
@@ -171,8 +167,6 @@ const filteredCombinedList = computed(() => {
       return false
 
     return !(hasGoogleSelected && item.source === 'GOOGLE');
-
-
   })
 })
 
@@ -193,6 +187,7 @@ watch(city, () => {
 })
 
 watch(selectedOrganizations, () => {
+  addPersonalCabinet.value = selectedOrganizations.value.some(org => org.source === 'YANDEX' || org.source === 'GOOGLE');
   fetchCombinedList()
 }, { deep: true })
 
@@ -202,31 +197,32 @@ onUnmounted(() => {
 })
 
 const selectOrganization = (
-  organization: (IYandexPlacementSearchResponse | ITwogisPlacementSearchResponse),
-  source: 'YANDEX' | 'TWOGIS',
+  organization: (IYandexPlacementSearchResponse | ITwogisPlacementSearchResponse | IGooglePlacementSearchResponse),
+  source: 'YANDEX' | 'TWOGIS' | 'GOOGLE',
   points?: { lat: number; lon: number },
 ) => {
   let orgToAdd: SelectedOrganizationType | null = null
 
   if (source === 'YANDEX') {
+    const yandexOrg = organization as IYandexPlacementSearchResponse
     orgToAdd = {
-      orgId: (organization as IYandexPlacementSearchResponse).id,
-      name: (organization as IYandexPlacementSearchResponse).name,
-      address: (organization as IYandexPlacementSearchResponse).address_name,
-      type: (organization as IYandexPlacementSearchResponse).type,
+      orgId: yandexOrg.id,
+      name: yandexOrg.name,
+      address: yandexOrg.address_name,
+      type: yandexOrg.type,
       source: 'YANDEX',
       login: login.value,
       password: password.value,
     }
   }
   else if (source === 'TWOGIS') {
-    const cityAlias = (organization as ITwogisPlacementSearchResponse)?.adm_div?.find(item => item.city_alias)?.city_alias
-
+    const twogisOrg = organization as ITwogisPlacementSearchResponse
+    const cityAlias = twogisOrg?.adm_div?.find(item => item.city_alias)?.city_alias
     orgToAdd = {
-      orgId: (organization as ITwogisPlacementSearchResponse).id,
-      name: (organization as ITwogisPlacementSearchResponse).name,
-      address: (organization as ITwogisPlacementSearchResponse).address_name,
-      type: (organization as ITwogisPlacementSearchResponse).type,
+      orgId: twogisOrg.id,
+      name: twogisOrg.name,
+      address: twogisOrg.address_name,
+      type: twogisOrg.type,
       city: cityAlias,
       source: 'TWOGIS',
       login: login.value,
@@ -247,19 +243,20 @@ const selectOrganization = (
       }
     }
   } else if (source === 'GOOGLE') {
+    const googleOrg = organization as IGooglePlacementSearchResponse
     orgToAdd = {
-      orgId: (organization as IGooglePlacementSearchResponse).id,
-      name: (organization as IGooglePlacementSearchResponse).name,
-      address: (organization as IGooglePlacementSearchResponse).address_name,
-      type: (organization as IGooglePlacementSearchResponse).type,
+      orgId: googleOrg.id,
+      name: googleOrg.name,
+      address: googleOrg.address_name,
+      type: googleOrg.type,
       city: city.value,
       source: 'GOOGLE',
       login: login.value,
       password: password.value,
     }
 
-    if (map.value && (organization as IGooglePlacementSearchResponse).location) {
-      const { lat, lng } = (organization as IGooglePlacementSearchResponse).location
+    if (map.value && googleOrg.location) {
+      const { lat, lng } = googleOrg.location
       if (typeof DG !== 'undefined' && DG.default && typeof DG.default.marker === 'function') {
         if (!mapMarker?.value)
           mapMarker.value = DG.default.marker([lat, lng]).addTo(map.value)
@@ -273,12 +270,10 @@ const selectOrganization = (
 
 
   if (orgToAdd) {
-    // First, remove any existing organization from the same source
     selectedOrganizations.value = selectedOrganizations.value.filter(
       org => org.source !== orgToAdd?.source,
     )
 
-    // Then add the new organization
     selectedOrganizations.value.push(orgToAdd)
   }
 }
@@ -291,30 +286,36 @@ const removeSelectedOrganization = (orgId: string | number, source: string) => {
 
 const submit = async () => {
   if (!companyId.value) {
-    alert('Пожалуйста, укажите ID компании, название организации и выберите хотя бы одно размещение.')
     return
   }
   isPreloaderForm.value = true
 
   const payload: AddOrganizationPayload = {
     companyId: companyId.value,
-    groupId: null, //TODO MOCK,
+    groupId: null,
     city: city.value,
     externalId: String(selectedOrganizations.value[0].orgId),
-    platform: "TWOGIS"
+    platform: selectedOrganizations.value[0].source,
+    login: login.value,
+    password: password.value
   };
 
+  // Добавляем логин и пароль в payload, если они существуют
+  if (selectedOrganizations.value[0].source === 'YANDEX' || selectedOrganizations.value[0].source === 'GOOGLE') {
+    payload.login = login.value;
+    payload.password = password.value;
+  }
+
+
   try {
-    await organizationStore.addOrganization(payload); // Вызываем addOrganization
+    await organizationStore.addOrganization(payload);
     selectedOrganizations.value = []
     searchQuery.value = ''
     login.value = ''
     password.value = ''
     addPersonalCabinet.value = false
-    alert('Организация успешно добавлена!'); // Оповещение об успехе
   } catch (error) {
     console.error('Ошибка при добавлении организации:', error);
-    alert('Произошла ошибка при добавлении организации.'); // Оповещение об ошибке
   } finally {
     isPreloaderForm.value = false
   }
@@ -330,6 +331,25 @@ const isItemSelected = (item: any) => {
   return selectedOrganizations.value.some(
     org => org.orgId === item.id && org.source === item.source,
   )
+}
+
+const isSaveButtonDisabled = computed(() => {
+  if (selectedOrganizations.value.length === 0) {
+    return true;
+  }
+
+  const hasAuthRequired = selectedOrganizations.value.some(org => org.source === 'YANDEX' || org.source === 'GOOGLE');
+
+  if (hasAuthRequired) {
+    return !isEmailValid.value || password.value.trim().length === 0;
+  }
+
+  return false;
+});
+
+
+const isResultItemDisabled = (item) => {
+  return item.source !== 'TWOGIS'
 }
 </script>
 
@@ -369,39 +389,70 @@ const isItemSelected = (item: any) => {
             <div class="font-weight-medium mb-2">
               Выбранные размещении вашей организации:
             </div>
-            <div
-              v-for="org in selectedOrganizations"
-              :key="`${org.source}-${org.orgId}`"
-              class="d-flex justify-content-between align-items-center bg-primary-lighten-5 rounded-lg mb-2"
-              style="border: 1px solid #e0e0e0;"
-            >
-              <div class="px-6 py-4">
-                <div class="font-weight-medium">
-                  {{ org.name }}
-                </div>
-                <div>{{ org.address }}</div>
-                <div class="text-caption font-italic d-flex align-center">
-                  <img
-                    style="max-width: 20px; margin-right: 5px;"
-                    :src="getPlatformPngAddress(org.source!)"
+
+            <VRow v-for="org in selectedOrganizations" :key="`${org.source}-${org.orgId}`">
+              <VCol>
+                <div
+                  class="d-flex justify-space-between align-items-center bg-primary-lighten-5 rounded-lg mb-2"
+                  style="border: 1px solid #e0e0e0;"
+                >
+                  <div class="px-6 py-4">
+                    <div class="font-weight-medium">
+                      {{ org.name }}
+                    </div>
+                    <div>{{ org.address }}</div>
+                    <div class="text-caption font-italic d-flex align-center">
+                      <img
+                        style="max-width: 20px; margin-right: 5px;"
+                        :src="getPlatformPngAddress(org.source!)"
+                      >
+                      {{ org.source }}
+                    </div>
+                  </div>
+
+                  <div class="px-6 py-4" style="width: 100%">
+                    <label class="v-label text-body-2 mb-2">Логин</label>
+                    <VTextField
+                      v-model="login"
+                      type="email"
+                      class="w-100"
+                      placeholder="Логин от личного кабинета организации"
+                      :rules="[v => !!v || 'Логин обязателен']"
+                    />
+                    <div
+                      v-if="!isEmailValid && login.length > 0"
+                      class="text-error mt-2"
+                    >
+                      Пожалуйста, введите действительный адрес электронной почты
+                    </div>
+                    <label class="v-label text-body-2 mt-4 mb-2">Пароль</label>
+                    <VTextField
+                      v-model="password"
+                      type="password"
+                      class="w-100"
+                      placeholder="Пароль от личного кабинета организации"
+                      :rules="[v => !!v || 'Пароль обязателен']"
+                    />
+                  </div>
+
+                  <VBtn
+                    flat
+                    variant="text"
+                    icon="bx-x"
+                    class="mr-2"
+                    color="red"
+                    @click="removeSelectedOrganization(org.orgId!, org.source!)"
                   >
-                  {{ org.source }}
+                    <VIcon
+                      size="24"
+                      icon="bx-x"
+                    />
+                  </VBtn>
                 </div>
-              </div>
-              <VBtn
-                flat
-                variant="text"
-                icon="bx-x"
-                class="mr-2"
-                color="red"
-                @click="removeSelectedOrganization(org.orgId!, org.source!)"
-              >
-                <VIcon
-                  size="24"
-                  icon="bx-x"
-                />
-              </VBtn>
-            </div>
+
+
+              </VCol>
+            </VRow>
           </div>
 
           <div v-if="!selectedOrganizations.length || searchQuery">
@@ -429,11 +480,15 @@ const isItemSelected = (item: any) => {
                 v-for="(item, index) in filteredCombinedList"
                 :key="`${item.source}-${item.id}-${index}`"
                 :value="item.id"
+                :disabled="isResultItemDisabled(item)"
                 :class="{ 'v-list-item--active': isItemSelected(item) }"
                 @click="selectOrganization(item, item.source, (item as ITwogisPlacementSearchResponse).point)"
               >
                 <VListItemTitle class="py-2">
-                  <div class="font-weight-bold d-flex align-center">
+                  <div
+                    class="font-weight-bold d-flex align-center"
+                    :class="{ 'blur-text': item.source === 'YANDEX' || item.source === 'GOOGLE' }"
+                  >
                     {{ item.name }}
                     <span class="text-caption font-italic ml-2">
                       <img
@@ -442,7 +497,7 @@ const isItemSelected = (item: any) => {
                       >
                     </span>
                   </div>
-                  <div>{{ item.address_name }}</div>
+                  <div :class="{ 'blur-text': item.source === 'YANDEX' || item.source === 'GOOGLE' }">{{ item.address_name }}</div>
                 </VListItemTitle>
               </VListItem>
             </VList>
@@ -456,35 +511,13 @@ const isItemSelected = (item: any) => {
             </VAlert>
           </div>
         </VCardText>
-        <VCardText>
-          <div v-if="addPersonalCabinet">
-            <label class="v-label text-body-2 mt-4 mb-2">Логин</label>
-            <AppTextField
-              v-model="login"
-              type="email"
-              class="w-100"
-              placeholder="Логин от личного кабинета организации"
-            />
-            <div
-              v-if="!isEmailValid && login.length > 0"
-              class="text-error mt-2"
-            >
-              Пожалуйста, введите действительный адрес электронной почты
-            </div>
-            <label class="v-label text-body-2 mt-4 mb-2">Пароль</label>
-            <AppTextField
-              v-model="password"
-              type="password"
-              class="w-100"
-              placeholder="Пароль от личного кабинета организации"
-            />
-          </div>
-        </VCardText>
+
         <VCardText class="d-flex justify-space-between">
           <VBtn
             text="Добавить"
             :loading="isPreloaderForm"
             @click="submit"
+            :disabled="isSaveButtonDisabled"
           >
             Сохранить
           </VBtn>
@@ -506,5 +539,10 @@ const isItemSelected = (item: any) => {
 
 .v-list-item--active {
   background-color: #e0f2f7;
+}
+
+.blur-text {
+  filter: blur(1px);
+  user-select: none;
 }
 </style>

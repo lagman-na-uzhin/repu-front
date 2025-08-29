@@ -65,9 +65,11 @@ const updateItemsPerPage = (val: number) => {
 const handleEditOrganization = (organization: any) => {
   useOrganizationStore().organizationForEdit = organization
 
-  router.push(ROUTES.ORGANIZATION_EDIT)
+  router.push(ROUTES.ORGANIZATION_EDIT(organization.id))
 }
-
+const handleAnalyticsOrganization = (organizationId: string) => {
+  router.push(ROUTES.ORGANIZATION_ANALYTICS(organizationId))
+}
 const handleEditDialogClose = () => {
   editOrganizationId.value = null
 }
@@ -83,6 +85,7 @@ const handleEditDialogClose = () => {
     <OrganizationCard
       :organization="org"
       @edit-organization="handleEditOrganization"
+      @analytycs-organization="handleAnalyticsOrganization"
     />
     <OrganizationEditForm
       v-if="editOrganizationId === org.id"

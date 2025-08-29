@@ -48,7 +48,6 @@ const CITY_ALIASES: { [key: string]: string } = {
   sarqan: 'Саркан',
   tekeli: 'Текели',
   zharkent: 'Жаркент',
-  shchuchinsk: 'Щучинск',
   aktau: 'Актау',
   aksai: 'Аксай',
   kurchatov: 'Курчатов',

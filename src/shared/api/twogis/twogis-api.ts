@@ -1,3 +1,5 @@
+import { RequestResult, useApi } from "@/composables/useApi"
+import { ITwogisSearchedRubricsResult } from "@/shared/api/twogis/dto/search-rubrics.response"
 import axios from 'axios'
 import type { ITwogisPlacementSearchResponse } from '@/shared/api/twogis/dto/twogis-placement-search.response'
 
@@ -349,4 +351,8 @@ export const TwogisApi = {
       }
     }
   },
+
+  searchRubricsFromTwogis: async (query: {organizationId: string, text: string}): Promise<RequestResult<ITwogisSearchedRubricsResult>> => {
+    return useApi.get('external/twogis/rubrics-search', query)
+  }
 }

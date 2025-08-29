@@ -3,6 +3,6 @@
       <div class="text-h5 font-weight-bold">
         Мои организации
       </div>
-      <AddOrganizationBtn variant="outlined" />
+      <AddOrganizationBtn variant="outlined" size="small" />
     </div>
 </template>

@@ -4,25 +4,25 @@ import { defineEmits, ref, watch } from 'vue'
 const emit = defineEmits(['update:filters', 'apply:filters', 'reset:filters'])
 
 const platforms = ref([
-  {label: '2GIS', value: 'TWOGIS'},
-  {label: 'Яндекс Карты', value: 'YANDEX'},
+  { label: '2GIS', value: 'TWOGIS' },
+  { label: 'Яндекс Карты', value: 'YANDEX' },
 ])
 
 const tones = ref([
-  {label: 'Все', value: null},
-  {label: 'Позитивные', value: 'positive'},
-  {label: 'Отрицательные', value: 'negative'},
+  { label: 'Все', value: null },
+  { label: 'Позитивные', value: 'positive' },
+  { label: 'Отрицательные', value: 'negative' },
 ])
 
-const selectedPlatforms = ref(null)
-const selectedTone = ref(tones[0])
+const selectedPlatform = ref(null)
+const selectedTone = ref(tones.value[0])
 const dateFrom = ref(null)
 const dateTo = ref(null)
 
-watch([selectedPlatforms, selectedTone, dateFrom, dateTo], () => {
+watch([selectedPlatform, selectedTone, dateFrom, dateTo], () => {
   emit('update:filters', {
-    platforms: selectedPlatforms.value,
-    tone: selectedTone.value,
+    platform: selectedPlatform.value,
+    tone: selectedTone.value?.value || null,
     dateFrom: dateFrom.value,
     dateTo: dateTo.value,
   })
@@ -30,11 +30,11 @@ watch([selectedPlatforms, selectedTone, dateFrom, dateTo], () => {
 
 // Функция для сброса фильтров
 const resetFilters = () => {
-  selectedPlatforms.value = []
-  selectedTone.value = 'all'
+  selectedPlatform.value = null
+  selectedTone.value = null
   dateFrom.value = null
   dateTo.value = null
-  emit('reset:filters') // Эмитим 'reset:filters'
+  emit('reset:filters')
 }
 </script>
 
@@ -55,19 +55,19 @@ const resetFilters = () => {
     </VCardTitle>
     <VCardText>
       <VRow>
-        <VCol cols="12" class="pa-0 pb-5">
+        <VCol
+          cols="12"
+          class="pa-0 pb-5"
+        >
           <VSelect
-            v-model="selectedPlatforms"
+            v-model="selectedPlatform"
             :items="platforms"
             item-title="label"
             item-value="value"
-            label="Все площадки"
+            label="Размещение"
             variant="outlined"
             density="comfortable"
-            no-data-text=""
-            multiple
             clearable
-            chips
             closable-chips
             hide-details
             hide-selected
@@ -77,7 +77,10 @@ const resetFilters = () => {
       </VRow>
 
       <VRow class="mt-2">
-        <VCol cols="12" class="pa-0  pb-5">
+        <VCol
+          cols="12"
+          class="pa-0  pb-5"
+        >
           <VSelect
             v-model="selectedTone"
             :items="tones"
@@ -96,7 +99,10 @@ const resetFilters = () => {
       </VRow>
 
       <VRow class="mt-2">
-        <VCol cols="12" class="pa-0  pb-5">
+        <VCol
+          cols="12"
+          class="pa-0  pb-5"
+        >
           <VTextField
             v-model="dateFrom"
             label="Дата от"

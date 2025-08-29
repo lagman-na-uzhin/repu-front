@@ -1,7 +1,11 @@
 <script setup lang="ts">
-import EditRubricsDialog from "@/views/pages/edit-organization/EditRubricsDialog.vue"
-import EditScheduleDialog from "@/views/pages/edit-organization/EditScheduleDialog.vue"
 import { computed, ref, watch } from 'vue'
+import type { SOURCE } from '@core/model/shared/source'
+import { API } from '@/shared/api'
+import type { IOrganization, IOrganizationRubric, IWorkingSchedule } from '@core/model/default/organization'
+import { getCityName } from '@/utils/city-alias-map'
+import EditRubricsDialog from '@/views/pages/edit-organization/EditRubricsDialog.vue'
+import EditScheduleDialog from '@/views/pages/edit-organization/EditScheduleDialog.vue'
 import { getPlatformPngAddress } from '@core/utils/getPlatformIcon'
 
 interface Placement {
@@ -11,24 +15,8 @@ interface Placement {
   reviewCount: number
 }
 
-interface Schedule {
-  dayOfWeek: 'MONDAY' | 'TUESDAY' | 'WEDNESDAY' | 'THURSDAY' | 'FRIDAY' | 'SATURDAY' | 'SUNDAY'
-  startTime: string
-  endTime: string
-  breakStartTime: string | null
-  breakEndTime: string | null
-}
-
 const props = defineProps<{
-  organization: {
-    id: string
-    name: string
-    address: string
-    isTemporarilyClosed: boolean
-    rubrics: { name: string; type: 'primary' | 'additional' }[]
-    placements: Placement[]
-    workingSchedules: Schedule[]
-  }
+  organization: IOrganization
 }>()
 
 const emit = defineEmits([
@@ -41,21 +29,23 @@ const emit = defineEmits([
 
 const isEditingName = ref(false)
 const editableName = ref(props.organization.name)
-const isTemporarilyClosed = ref(props.organization.isTemporarilyClosed)
 const placements = ref<Placement[]>(props.organization.placements)
-const localRubrics = ref(props.organization.rubrics)
-const localSchedules = ref(props.organization.workingSchedules)
+const localRubrics = ref<IOrganizationRubric>(props.organization.rubrics)
 
-// Состояния для модальных окон
+const localSchedule = ref<IWorkingSchedule | null>(props.organization?.workingSchedule || null)
+
+const localIsTemporaryClosed = ref<boolean>(props.organization.workingSchedule.isTemporarilyClosed)
+
 const showEditRubricsDialog = ref(false)
 const showEditScheduleDialog = ref(false)
 
 watch(() => props.organization, newOrg => {
   editableName.value = newOrg.name
-  isTemporarilyClosed.value = newOrg.isTemporarilyClosed
+  localIsTemporaryClosed.value = newOrg.workingSchedule.isTemporarilyClosed
   placements.value = newOrg.placements
   localRubrics.value = newOrg.rubrics
-  localSchedules.value = newOrg.workingSchedules
+
+  localSchedule.value = newOrg.workingSchedule || []
 }, { deep: true, immediate: true })
 
 const saveChanges = () => {
@@ -65,45 +55,62 @@ const saveChanges = () => {
     isTemporarilyClosed: isTemporarilyClosed.value,
     placements: placements.value,
     rubrics: localRubrics.value,
-    workingSchedules: localSchedules.value,
+    workingSchedules: localSchedule.value,
   }
 
   emit('save', updatedData)
 }
 
-const handleAddPlacement = () => {
-  console.log('Добавить новое размещение')
-  emit('add-placement')
-}
-
 const handleEditSchedule = () => {
-  showEditScheduleDialog.value = true
+  if (showEditScheduleDialog.value != true) {
+    showEditScheduleDialog.value = true
+  }
 }
 
 const handleEditRubrics = () => {
   showEditRubricsDialog.value = true
 }
 
-const handleSaveRubrics = (newRubrics) => {
+const handleSaveRubrics = async (newRubrics: {
+  id: null
+  name: null
+  external: { externalId: string; platform: SOURCE }[]
+}) => {
   localRubrics.value = newRubrics
+
+  await API.ORGANIZATION.update(props.organization.id, newRubrics)
 }
 
-const handleSaveSchedules = (newSchedules) => {
-  localSchedules.value = newSchedules
+const handleSaveSchedules = async newEntries => {
+  console.log('handleSaveSchedules')
+  localSchedule.value.entries = newEntries
+
+  const { success } = await API.ORGANIZATION.update(
+    props.organization.id,
+    { workingSchedule: { dailyHours: localSchedule.value, isTemporaryClosed: localIsTemporaryClosed } },
+  )
+
+  showEditScheduleDialog.value = false
 }
 
-const addPlacementBtnText = computed(() => {
-  if (props.organization.placements.length === 0)
-    return 'Добавить размещении Google Maps и 2GIS'
-  if (!props.organization.placements.find(p => p.platform === 'TWOGIS'))
-    return 'Добавить размещение 2GIS'
-  if (!props.organization.placements.find(p => p.platform === 'GOOGLE'))
-    return 'Добавить размещение Google Maps'
-
-  return null
-})
-
+const handleSaveTempClosed = async () => {
+  await API.ORGANIZATION.update(
+    props.organization.id,
+    { workingSchedule: { dailyHours: localSchedule.value, isTemporaryClosed: localIsTemporaryClosed } },
+  )
+  showEditScheduleDialog.value = false
+}
 const dayMap = {
+  MONDAY: 'ПН',
+  TUESDAY: 'ВТ',
+  WEDNESDAY: 'СР',
+  THURSDAY: 'ЧТ',
+  FRIDAY: 'ПТ',
+  SATURDAY: 'СБ',
+  SUNDAY: 'ВС',
+}
+
+const fullDayMap = {
   MONDAY: 'Понедельник',
   TUESDAY: 'Вторник',
   WEDNESDAY: 'Среда',
@@ -115,8 +122,67 @@ const dayMap = {
 
 const dayOrder = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY']
 
+const groupedSchedules = computed(() => {
+  console.log(localSchedule.value, 'localSchedules.value')
+  console.log(props.organization, 'props.organization.working_schedule')
+  if (!localSchedule.value || localSchedule.value.length === 0)
+    return []
+
+  const sortedSchedules = [...localSchedule.value.entries].sort((a, b) => dayOrder.indexOf(a.dayOfWeek) - dayOrder.indexOf(b.dayOfWeek))
+
+  const groups = []
+  let currentGroup = []
+
+  for (let i = 0; i < sortedSchedules.length; i++) {
+    const currentSchedule = sortedSchedules[i]
+    const nextSchedule = sortedSchedules[i + 1]
+
+    if (currentGroup.length === 0) {
+      currentGroup.push(currentSchedule)
+    }
+    else {
+      // Check if current schedule is the same as the last one in the group
+      const lastInGroup = currentGroup[currentGroup.length - 1]
+      if (
+        lastInGroup.startTime === currentSchedule.startTime
+        && lastInGroup.endTime === currentSchedule.endTime
+        && lastInGroup.breakStartTime === currentSchedule.breakStartTime
+        && lastInGroup.breakEndTime === currentSchedule.breakEndTime
+      ) {
+        currentGroup.push(currentSchedule)
+      }
+      else {
+        // Schedule changed, so finalize the current group and start a new one
+        groups.push(currentGroup)
+        currentGroup = [currentSchedule]
+      }
+    }
+
+    // Handle the last item in the list
+    if (i === sortedSchedules.length - 1)
+      groups.push(currentGroup)
+  }
+
+  // Format the final groups for display
+  return groups.map(group => {
+    const firstDay = dayMap[group[0].dayOfWeek]
+    const lastDay = dayMap[group[group.length - 1].dayOfWeek]
+    const dayRange = firstDay === lastDay ? fullDayMap[group[0].dayOfWeek] : `${firstDay} — ${lastDay}`
+    const startTime = group[0].startTime.slice(0, 5)
+    const endTime = group[0].endTime.slice(0, 5)
+    const time = `${startTime} — ${endTime}`
+
+    return {
+      dayRange,
+      time,
+    }
+  })
+})
+
 const formattedSchedules = computed(() => {
-  const sortedSchedules = [...localSchedules.value].sort((a, b) => {
+  const schedulesToFormat = localSchedule.value || []
+
+  const sortedSchedules = [...schedulesToFormat].sort((a, b) => {
     const dayA = dayOrder.indexOf(a.dayOfWeek)
     const dayB = dayOrder.indexOf(b.dayOfWeek)
 
@@ -124,7 +190,7 @@ const formattedSchedules = computed(() => {
   })
 
   return sortedSchedules.map(schedule => {
-    const day = dayMap[schedule.dayOfWeek]
+    const day = fullDayMap[schedule.dayOfWeek]
     const startTime = schedule.startTime.slice(0, 5)
     const endTime = schedule.endTime.slice(0, 5)
     const time = `${startTime} — ${endTime}`
@@ -152,25 +218,60 @@ const redirectToExternalPlacementPage = (externalId: string, platform: 'TWOGIS' 
     window.location.href = `https://2gis.kz/almaty/firm/${id}`
   }
   else {
-    window.location.href = `https://www.google.com/maps/place/?q=place_id:${externalId}`
+    window.location.href = `https://www.google.com/maps/place/?q=place_id:$${externalId}`
   }
 }
+
+const saveName = () => {
+  console.log('Имя сохранено:', editableName.value)
+  isEditingName.value = false
+}
+
+const cancelNameEdit = () => {
+  editableName.value = props.organization.name
+  isEditingName.value = false
+}
+
+const cardUrl = computed(() => {
+  return `https://maps.geoapify.com/v1/staticmap?style=osm-bright&width=600&height=100&center=lonlat:${props.organization.address.longitude},${props.organization.address.latitude}&zoom=15&marker=lonlat:${props.organization.address.longitude},${props.
+    organization.address.latitude}&apiKey=30781e0659664c018fbf73d06c0849cf`
+
+})
 </script>
 
 <template>
   <VRow>
     <VCol cols="12">
-      <VCard class="pa-2">
-        <VTextarea
+      <VCard class="pa-4">
+        <div
           v-if="isEditingName"
-          v-model="editableName"
-          auto-grow
-          rows="1"
-          hide-details
-          class="text-h5 font-weight-bold"
-          @blur="isEditingName = false"
-          @keydown.enter.prevent="isEditingName = false"
-        />
+          class="d-flex align-center gap-4"
+        >
+          <VTextarea
+            v-model="editableName"
+            auto-grow
+            rows="1"
+            hide-details
+            class="text-h5 font-weight-bold"
+            @keydown.enter.prevent="saveName"
+          />
+          <div class="d-flex align-center gap-2 mt-2">
+            <VBtn
+              size="small"
+              color="primary"
+              @click="saveName"
+            >
+              Сохранить
+            </VBtn>
+            <VBtn
+              size="small"
+              variant="text"
+              @click="cancelNameEdit"
+            >
+              Отмена
+            </VBtn>
+          </div>
+        </div>
         <h5
           v-else
           class="text-h5 font-weight-bold cursor-pointer"
@@ -179,22 +280,26 @@ const redirectToExternalPlacementPage = (externalId: string, platform: 'TWOGIS' 
           {{ editableName }}
         </h5>
 
-        <span>{{ organization.address.address }}</span>
+        <span>{{ getCityName(organization.address.city) }}, {{ organization.address.address }}</span>
       </VCard>
     </VCol>
 
     <VCol cols="12">
-      <OrganizationTwogisMap
-        :latitude="Number(organization.address.latitude)"
-        :longitude="Number(organization.address.longitude)"
-        api-key="142be1a7-aa84-4b5b-9a8d-1c05f09d518d"
-      />
+      <VImg :src="cardUrl"`/>
+<!--      <OrganizationTwogisMap-->
+<!--        :latitude="Number(organization.address.latitude)"-->
+<!--        :longitude="Number(organization.address.longitude)"-->
+<!--        api-key="142be1a7-aa84-4b5b-9a8d-1c05f09d518d"-->
+<!--      />-->
     </VCol>
   </VRow>
 
   <div class="d-flex flex-column">
     <VCol class="pa-0 mt-4">
-      <div class="d-flex align-center justify-space-between cursor-pointer" @click="handleEditRubrics">
+      <div
+        class="d-flex align-center justify-space-between cursor-pointer"
+        @click="handleEditRubrics"
+      >
         <h6 class="text-h6 mb-2 font-weight-bold">
           Рубрики:
         </h6>
@@ -203,16 +308,30 @@ const redirectToExternalPlacementPage = (externalId: string, platform: 'TWOGIS' 
       <VCard class="pa-4">
         <div class="d-flex flex-wrap ga-2">
           <VChip
-            @click="handleEditRubrics"
-            class="cursor-pointer"
             v-for="rubric in localRubrics"
             :key="rubric.name"
+            class="cursor-pointer"
             :color="rubric.type === 'primary' ? 'primary' : 'default'"
             variant="tonal"
             size="small"
+            @click="handleEditRubrics"
           >
             {{ rubric.name }}
           </VChip>
+          <VBtn
+            v-if="localRubrics.length === 0"
+            variant="tonal"
+            color="primary"
+            size="small"
+            class="mt-2"
+            @click="handleEditRubrics"
+          >
+            <VIcon
+              start
+              icon="bx-plus"
+            />
+            Добавить рубрики
+          </VBtn>
         </div>
       </VCard>
     </VCol>
@@ -293,31 +412,52 @@ const redirectToExternalPlacementPage = (externalId: string, platform: 'TWOGIS' 
       cols="3"
       class="pa-0"
     >
-      <div class="d-flex align-center justify-space-between mb-2 cursor-pointer" @click="handleEditSchedule">
+      <div
+        class="d-flex align-center justify-space-between mb-2 cursor-pointer"
+        @click="handleEditSchedule"
+      >
         <h6 class="text-h6 font-weight-bold">
           Время работы:
         </h6>
       </div>
 
       <VList
+        v-if="groupedSchedules.length > 0"
         density="compact"
         class="pa-0"
         style="background-color: transparent"
       >
         <VListItem
-          v-for="schedule in formattedSchedules"
-          :key="schedule.dayOfWeek"
+          v-for="group in groupedSchedules"
+          :key="group.dayRange"
           class="px-0"
         >
           <VListItemTitle class="d-flex justify-space-between align-center">
-            <span>{{ schedule.day }}</span>
+            <span>{{ group.dayRange }}</span>
 
-            <VCard class="pa-2 cursor-pointer"  @click="handleEditSchedule">
-              <span class="font-weight-bold">{{ schedule.time }}</span>
+            <VCard
+              class="pa-2 cursor-pointer"
+              @click="handleEditSchedule"
+            >
+              <span class="font-weight-bold">{{ group.time }}</span>
             </VCard>
           </VListItemTitle>
         </VListItem>
       </VList>
+      <VBtn
+        v-else
+        variant="tonal"
+        color="primary"
+        class="mt-2 pa-2"
+        size="small"
+        @click="handleEditSchedule"
+      >
+        <VIcon
+          start
+          icon="bx-plus"
+        />
+        Указать время работы
+      </VBtn>
     </VCol>
 
     <VDivider class="mt-4" />
@@ -325,55 +465,34 @@ const redirectToExternalPlacementPage = (externalId: string, platform: 'TWOGIS' 
     <VCol class="pa-0">
       <div class="d-flex align-center">
         <VSwitch
-          v-model="isTemporarilyClosed"
+          v-model="localIsTemporaryClosed"
           color="red"
           label="Временно закрыта"
+          @update:model-value="handleSaveTempClosed"
           hide-details
         />
       </div>
     </VCol>
   </div>
 
-  <VCardActions class="justify-end">
-    <VBtn
-      variant="text"
-      color="secondary"
-      @click="emit('close')"
-    >
-      Отмена
-    </VBtn>
-    <VBtn
-      color="primary"
-      variant="outlined"
-      @click="saveChanges"
-    >
-      Применить для группы
-    </VBtn>
-    <VBtn
-      color="primary"
-      variant="flat"
-      @click="saveChanges"
-    >
-      Применить
-    </VBtn>
-  </VCardActions>
-
   <EditRubricsDialog
     v-model="showEditRubricsDialog"
     :rubrics="localRubrics"
+    :organization-id="props.organization.id"
     @save="handleSaveRubrics"
   />
 
   <EditScheduleDialog
     v-model="showEditScheduleDialog"
-    :working-schedules="localSchedules"
+    :working-schedules="localSchedule.entries"
+    :schedule-id="localSchedule.id"
     @save="handleSaveSchedules"
   />
 </template>
 
 <style>
 .disabled-placement-container {
-  position: relative; /* Родительский элемент должен быть позиционирован */
+  position: relative;
 }
 
 .disabled-platform-icon {
@@ -389,6 +508,6 @@ const redirectToExternalPlacementPage = (externalId: string, platform: 'TWOGIS' 
   top: 65%;
   left: 50%;
   transform: translate(-50%, -50%);
-  z-index: 10; /* Помещает кнопку поверх других элементов */
+  z-index: 10;
 }
 </style>

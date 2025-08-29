@@ -17,21 +17,7 @@ const totalReviews = ref(0) // Общее количество отзывов б
 
 const authStore = useAuthStore()
 
-// Инициальные фильтры, которые пользователь может сбрасывать.
-// companyId здесь не указываем, так как он будет добавляться динамически.
-const initialUserChangableFilters = {
-  groupId: null,
-  cityId: null,
-  organizationId: null,
-  platforms: [],
-  tone: 'all',
-  dateFrom: null,
-  dateTo: null,
-}
-
-// currentTableParams теперь не содержит companyId в filter при инициализации,
-// так как companyId будет добавляться динамически при каждом запросе.
-const currentTableParams = ref(getTableParams(MODULE_CONTENT.REVIEW_LIST, initialUserChangableFilters))
+const currentTableParams = ref(getTableParams(MODULE_CONTENT.REVIEW_LIST, {}))
 
 const fetchReviews = async () => {
   loading.value = true
@@ -40,7 +26,6 @@ const fetchReviews = async () => {
       ...currentTableParams.value,
       filter: {
         ...currentTableParams.value.filter, // Текущие фильтры из currentTableParams
-        companyId: authStore.user?.companyId, // companyId текущей компании пользователя
       },
     }
 
@@ -67,9 +52,8 @@ const fetchReviews = async () => {
 
 // Обработка обновлений фильтров от ReviewListHeader и ReviewListFilters
 const handleFilterUpdate = (newFilters: { [key: string]: any }) => {
-  // Мержим новые фильтры с текущими
   currentTableParams.value.filter = { ...currentTableParams.value.filter, ...newFilters }
-  currentTableParams.value.pagination.page = 1 // Сбрасываем страницу при изменении фильтров
+  currentTableParams.value.pagination.page = 1
   fetchReviews()
 }
 
@@ -87,7 +71,7 @@ const handlePaginationUpdate = (pagination: { page?: number; itemsPerPage?: numb
 // Обработка сброса фильтров
 const handleFilterReset = () => {
   // Полностью перезаписываем фильтры на их начальное состояние (без companyId)
-  currentTableParams.value.filter = { ...initialUserChangableFilters }
+  currentTableParams.value.filter = { }
   currentTableParams.value.pagination.page = 1 // Сбрасываем страницу
   fetchReviews()
 }
@@ -114,14 +98,9 @@ const itemsPerPage = computed({
 const compactOrganizations = ref(null)
 
 const fetchCompactOrganizations = async () => {
-  const { success, data } = await API.ORGANIZATION.getCompactOrganizations({ companyId: authStore.user!.companyId })
-  if (success && data) {
-    console.log(data, "data")
-    console.log(typeof data, "typeof data")
+  const { success, data } = await API.ORGANIZATION.getCompactOrganizations()
+  if (success && data)
     compactOrganizations.value = data
-  }
-
-  console.log(data, "data")
 }
 
 onMounted(() => {
@@ -164,6 +143,7 @@ onMounted(() => {
         :total-pages="totalPages"
         :current-page="currentPage"
         :items-per-page="itemsPerPage"
+        :total-reviews="totalReviews"
         @update:model-value="handlePaginationUpdate({ page: $event })"
         @update:items-per-page="handlePaginationUpdate({ itemsPerPage: $event })"
       />

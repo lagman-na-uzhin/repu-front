@@ -70,22 +70,19 @@ onMounted(() => {
 <template>
   <EmployeeListHeader/>
   <VRow>
-    <VCol
-      cols="12"
-      sm="12"
-      md="5"
-      xl="3"
-      order-md="2"
-      order-xl="2"
-    >
-      <EmployeeListFilters/>
-    </VCol>
+<!--    <VCol-->
+<!--      cols="12"-->
+<!--      sm="12"-->
+<!--      md="5"-->
+<!--      xl="3"-->
+<!--      order-md="2"-->
+<!--      order-xl="2"-->
+<!--    >-->
+<!--      <EmployeeListFilters/>-->
+<!--    </VCol>-->
 
     <VCol
       cols="12"
-      sm="12"
-      md="7"
-      xl="9"
       order-md="1"
       order-xl="1"
     >

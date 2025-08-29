@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { reactive, ref, watchEffect } from 'vue'
-import OrganizationListFilters from '@/views/pages/organizationList/OrganizationListFilters.vue'
+import OrganizationListFilters from '@/views/pages/organization-list/OrganizationListFilters.vue'
 
-import OrganizationListHeader from '@/views/pages/organizationList/OrganizationListHeader.vue'
-import OrganizationSummary from '@/views/pages/organizationList/OrganizationListSummary.vue'
-import OrganizationList from '@/views/pages/organizationList/OrganizationList.vue'
+import OrganizationListHeader from '@/views/pages/organization-list/OrganizationListHeader.vue'
+import OrganizationSummary from '@/views/pages/organization-list/OrganizationListSummary.vue'
+import OrganizationList from '@/views/pages/organization-list/OrganizationList.vue'
 import AddOrganizationDialog from '@/views/add-organization/AddOrganizationDialog.vue'
 
 import { API } from '@/shared/api'
